@@ -1,0 +1,38 @@
+--- a/cargo/private/cargo_build_script.bzl
++++ b/cargo/private/cargo_build_script.bzl
+@@ -233,7 +233,34 @@
+     return res
+ 
+ def _pwd_flags(args):
+-    return _pwd_flags_fsanitize_ignorelist(_pwd_flags_isystem(_pwd_flags_bindir(_pwd_flags_sysroot(args))))
++    return _pwd_flags_fsanitize_ignorelist(_pwd_flags_isystem(_pwd_flags_bindir(_pwd_flags_sysroot(_pwd_flags_linker_inputs(args)))))
++
++def _pwd_flags_linker_inputs(args):
++    """Prefix execroot-relative plain file paths and -L paths with ${pwd}.
++
++    Some toolchains (e.g., the LLVM Bazel toolchain) emit link flags that
++    reference build outputs via execroot-relative paths (e.g., bazel-out/...).
++    These paths need to be prefixed with ${pwd}/ so they resolve correctly
++    when the cargo build script runner sets the working directory to
++    CARGO_MANIFEST_DIR (not the execroot).
++
++    Args:
++        args (list): List of linker arguments.
++
++    Returns:
++        list: The modified argument list.
++    """
++    res = []
++    for arg in args:
++        if arg and not arg.startswith("-") and not paths.is_absolute(arg) and "/" in arg:
++            # Plain relative file path with directory separators (e.g., bazel-out/.../libfoo.a)
++            res.append("${{pwd}}/{}".format(arg))
++        elif arg.startswith("-L") and len(arg) > 2 and not paths.is_absolute(arg[2:]) and "/" in arg[2:]:
++            # -L<relative_path> library search path
++            res.append("-L${{pwd}}/{}".format(arg[2:]))
++        else:
++            res.append(arg)
++    return res
+ 
+ def _feature_enabled(ctx, feature_name, default = False):
+     """Check if a feature is enabled.

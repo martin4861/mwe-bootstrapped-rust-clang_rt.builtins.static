@@ -11,6 +11,12 @@ use_repo(osx, "macos_sdk")
 
 bazel_dep(name = "rules_rust", version = "0.69.0")
 
+single_version_override(
+    module_name = "rules_rust",
+    patches = ["//patches:rules_rust_fix_pwd_flags.patch"],
+    patch_strip = 1,
+)
+
 ### rules_rust
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
@@ -43,6 +49,15 @@ crate = use_extension(
 crate.spec(
     package = "aws-lc-rs",
     version = "1.15.2",
+)
+crate.annotation(
+    crate = "aws-lc-sys",
+    build_script_data = [
+        "@@llvm++llvm_source+compiler-rt//:clang_rt.builtins.static",
+    ],
+    build_script_env = {
+        "AWS_LC_SYS_NO_JITTER_ENTROPY": "1",
+    },
 )
 crate.from_specs(
     name = "crates",
