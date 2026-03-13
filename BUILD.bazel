@@ -1,0 +1,14 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "works",
+    srcs = ["src/works-main.rs"],
+)
+
+rust_binary(
+    name = "mwe",
+    srcs = ["src/main.rs"],
+    deps = [
+        "@crates//:aws-lc-rs",
+    ],
+)
