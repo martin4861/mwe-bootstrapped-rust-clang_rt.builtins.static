@@ -10,6 +10,7 @@ use_repo(osx, "macos_sdk")
 
 bazel_dep(name = "rules_rust", version = "0.69.0")
 
+### rules_rust
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2024",
@@ -18,6 +19,21 @@ rust.toolchain(
 use_repo(rust, "rust_toolchains")
 
 register_toolchains("@rust_toolchains//:all")
+
+
+# ### rules_rs
+# bazel_dep(name = "rules_rs", version = "0.0.43")
+# toolchains = use_extension("@rules_rs//rs/experimental/toolchains:module_extension.bzl", "toolchains")
+
+# toolchains.toolchain(
+#     edition = "2024",
+#     version = "nightly/2025-11-10",
+# )
+
+# use_repo(toolchains, "default_rust_toolchains")
+# register_toolchains("@default_rust_toolchains//:all")
+
+# ###
 
 crate = use_extension(
     "@rules_rust//crate_universe:extensions.bzl",
