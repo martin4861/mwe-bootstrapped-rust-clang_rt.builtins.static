@@ -9,6 +9,21 @@ clang: error: no such file or directory:
 'bazel-out/darwin_arm64-fastbuild-ST-bdec89fd5d65/bin/external/llvm++llvm_source+compiler-rt/clang_rt.builtins.static_/libclang_rt.builtins.static.a'
 ```
 
+Relevant compiler call:
+
+```bash
+[...]
+"-L/private/var/tmp/_bazel_user/5e8a5fba841e0a1d66031201c08bffe3/sandbox/darwin-sandbox/1060/execroot/_main/bazel-out/darwin_arm64-fastbuild/bin/external/llvm+/runtimes/libunwind/libunwind_library_search_directory",
+"-rtlib=compiler-rt",
+"-Wl,-oso_prefix,.",
+"bazel-out/darwin_arm64-fastbuild-ST-bdec89fd5d65/bin/external/llvm++llvm_source+compiler-rt/clang_rt.builtins.static_/libclang_rt.builtins.static.a",
+"-lSystem",
+[...]
+```
+
+Most paths are absolute paths, except for the one to `libclang_rt.builtins.static.a`, which is a relative path.
+
+
 ## Failure on Linux - Fixed
 
 *Fixed* by using the HEAD of `rules_rust`.
