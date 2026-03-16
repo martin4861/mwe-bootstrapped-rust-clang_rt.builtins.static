@@ -20,6 +20,8 @@ rules_rust_version = "f5b713578a97eca01c449dc211a801c48f2c5ee3"
 archive_override(
     module_name = "rules_rust",
     integrity = "sha256-YMa/n5PbL3GJGNOXHEBe7mXObECezkRONKI3CyEDRVQ=",
+    patch_strip = 1,
+    patches = ["//:static_lib.patch"],
     strip_prefix = "rules_rust-{}".format(rules_rust_version),
     urls = ["https://github.com/bazelbuild/rules_rust/archive/{}.zip".format(rules_rust_version)],
 )

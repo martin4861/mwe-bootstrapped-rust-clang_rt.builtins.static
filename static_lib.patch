@@ -1,0 +1,86 @@
+diff --git a/cargo/private/cargo_build_script.bzl b/cargo/private/cargo_build_script.bzl
+index c23108851..95597edbc 100644
+--- a/cargo/private/cargo_build_script.bzl
++++ b/cargo/private/cargo_build_script.bzl
+@@ -263,12 +263,26 @@ def _pwd_flags_resource_dir(args):
+     """Prefix execroot-relative paths in -resource-dir arguments with ${pwd}."""
+     return _prefix_pwd_to_flag(args, ["-resource-dir=", "-resource-dir"])
+ 
++def _pwd_flags_direct_libs(args):
++    """Prefix execroot-relative direct static/object file arguments with ${pwd}.
++
++    Handles bare .a and .o file path arguments passed directly to the linker,
++    without any associated flag (e.g. a direct path to libclang_rt.builtins.a).
++    """
++    res = []
++    for arg in args:
++        if not arg.startswith("-") and not paths.is_absolute(arg) and (arg.endswith(".a") or arg.endswith(".o")):
++            res.append("${{pwd}}/{}".format(arg))
++        else:
++            res.append(arg)
++    return res
++
+ def _pwd_paths(args):
+     """Prefix execroot-relative paths with ${pwd}."""
+     return _prefix_pwd_to_paths(args)
+ 
+ def _pwd_flags(args):
+-    return _pwd_flags_fsanitize_ignorelist(_pwd_flags_isystem(_pwd_flags_L(_pwd_flags_B(_pwd_flags_resource_dir(_pwd_flags_sysroot(args))))))
++    return _pwd_flags_direct_libs(_pwd_flags_fsanitize_ignorelist(_pwd_flags_isystem(_pwd_flags_L(_pwd_flags_B(_pwd_flags_resource_dir(_pwd_flags_sysroot(args)))))))
+ 
+ def _feature_enabled(ctx, feature_name, default = False):
+     """Check if a feature is enabled.
+diff --git a/test/cargo_build_script/cc_args_and_env/BUILD.bazel b/test/cargo_build_script/cc_args_and_env/BUILD.bazel
+index 4ebfddac6..15247dcf4 100644
+--- a/test/cargo_build_script/cc_args_and_env/BUILD.bazel
++++ b/test/cargo_build_script/cc_args_and_env/BUILD.bazel
+@@ -14,6 +14,8 @@ load(
+     "libpath_relative_test",
+     "resource_dir_absolute_test",
+     "resource_dir_relative_test",
++    "static_lib_absolute_test",
++    "static_lib_relative_test",
+     "sysroot_absolute_test",
+     "sysroot_next_absolute_test",
+     "sysroot_relative_test",
+@@ -58,3 +60,7 @@ include_relative_test(name = "include_relative_test")
+ include_absolute_test(name = "include_absolute_test")
+ 
+ include_mixed_test(name = "include_mixed_test")
++
++static_lib_relative_test(name = "static_lib_relative_test")
++
++static_lib_absolute_test(name = "static_lib_absolute_test")
+diff --git a/test/cargo_build_script/cc_args_and_env/cc_args_and_env_test.bzl b/test/cargo_build_script/cc_args_and_env/cc_args_and_env_test.bzl
+index ecc45b484..a3e6e13bd 100644
+--- a/test/cargo_build_script/cc_args_and_env/cc_args_and_env_test.bzl
++++ b/test/cargo_build_script/cc_args_and_env/cc_args_and_env_test.bzl
+@@ -549,6 +549,28 @@ def include_absolute_test(name):
+         }),
+     )
+ 
++def static_lib_relative_test(name):
++    cargo_build_script_with_extra_cc_compile_flags(
++        name = "%s/cargo_build_script" % name,
++        extra_cc_compile_flags = ["bazel-out/darwin_arm64-fastbuild/bin/some_lib/libfoo.a"],
++    )
++    cc_args_and_env_analysis_test(
++        name = name,
++        target_under_test = "%s/cargo_build_script" % name,
++        expected_cflags = ["${pwd}/bazel-out/darwin_arm64-fastbuild/bin/some_lib/libfoo.a"],
++    )
++
++def static_lib_absolute_test(name):
++    cargo_build_script_with_extra_cc_compile_flags(
++        name = "%s/cargo_build_script" % name,
++        extra_cc_compile_flags = ["/absolute/path/to/libfoo.a"],
++    )
++    cc_args_and_env_analysis_test(
++        name = name,
++        target_under_test = "%s/cargo_build_script" % name,
++        expected_cflags = ["/absolute/path/to/libfoo.a"],
++    )
++
+ def include_mixed_test(name):
+     cargo_build_script_with_extra_cc_compile_flags(
+         name = "%s/cargo_build_script" % name,
