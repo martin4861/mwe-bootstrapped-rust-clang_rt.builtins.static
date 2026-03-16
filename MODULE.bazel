@@ -6,8 +6,11 @@ register_toolchains("@llvm//toolchain:all")
 
 osx = use_extension("@llvm//extensions:osx.bzl", "osx")
 osx.framework(name = "Security")
+osx.framework(name = "CFNetwork")
 osx.framework(name = "CoreServices")
 osx.framework(name = "CoreFoundation")
+osx.framework(name = "DiskArbitration")
+osx.framework(name = "IOKit")
 use_repo(osx, "macos_sdk")
 
 bazel_dep(name = "rules_rust", version = "0.69.0")
